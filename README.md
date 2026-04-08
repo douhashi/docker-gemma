@@ -2,6 +2,22 @@
 
 Docker で Gemma4 モデルを動かすためのリポジトリ。
 
+## 前提条件
+
+### ローカル実行
+
+- [Docker](https://docs.docker.com/get-docker/) + Docker Compose
+- NVIDIA GPU + [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
+
+### RunPod デプロイ
+
+- [RunPod](https://www.runpod.io/) アカウント
+- [runpodctl](https://github.com/runpod/runpodctl) — `runpodctl doctor` で API キー設定済みであること
+
+### Goose 接続
+
+- [Goose](https://github.com/block/goose) (codename-goose)
+
 ## 構成
 
 | 環境 | フレームワーク | モデル | GPU |
