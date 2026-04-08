@@ -169,6 +169,25 @@ GOOSE_CONFIG="${HOME}/.config/goose/config.yaml"
 if [ -f "${GOOSE_CONFIG}" ]; then
   sed -i "s|OPENAI_HOST:.*|OPENAI_HOST: ${BASE_URL}|" "${GOOSE_CONFIG}"
   echo "==> Updated ${GOOSE_CONFIG} (OPENAI_HOST: ${BASE_URL})"
+else
+  mkdir -p "$(dirname "${GOOSE_CONFIG}")"
+  cat > "${GOOSE_CONFIG}" <<GOOSE_EOF
+GOOSE_PROVIDER: openai
+GOOSE_MODEL: ${MODEL_NAME}
+OPENAI_HOST: ${BASE_URL}
+GOOSE_MODE: auto
+GOOSE_TELEMETRY_ENABLED: true
+extensions:
+  developer:
+    enabled: true
+    type: platform
+    name: developer
+    description: Write and edit files, and execute shell commands
+    display_name: Developer
+    bundled: true
+    available_tools: []
+GOOSE_EOF
+  echo "==> Created ${GOOSE_CONFIG}"
 fi
 
 echo ""
