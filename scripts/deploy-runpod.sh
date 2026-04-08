@@ -2,32 +2,19 @@
 set -euo pipefail
 
 # ===== Configuration =====
+POD_NAME="${POD_NAME:-docker-gemma}"
 TEMPLATE_NAME="${TEMPLATE_NAME:-docker-gemma-vllm}"
-ENDPOINT_NAME="${ENDPOINT_NAME:-docker-gemma}"
-IMAGE="${IMAGE:-runpod/worker-vllm:stable-cuda12.1.0}"
-GPU_ID="${GPU_ID:-NVIDIA RTX A5000}"
-WORKERS_MIN="${WORKERS_MIN:-0}"
-WORKERS_MAX="${WORKERS_MAX:-1}"
-CONTAINER_DISK="${CONTAINER_DISK:-40}"
-VOLUME_DISK="${VOLUME_DISK:-0}"
+IMAGE="${IMAGE:-vllm/vllm-openai:gemma4}"
+CONTAINER_DISK="${CONTAINER_DISK:-50}"
+MIN_VRAM="${MIN_VRAM:-24}"
+MAX_PRICE="${MAX_PRICE:-0.80}"
 
-# vLLM environment variables
+# vLLM settings
 MODEL_NAME="${MODEL_NAME:-cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit}"
-QUANTIZATION="${QUANTIZATION:-awq}"
 MAX_MODEL_LENGTH="${MAX_MODEL_LENGTH:-8192}"
 GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.90}"
 DTYPE="${DTYPE:-float16}"
-
-ENV_JSON=$(cat <<ENVEOF
-{
-  "MODEL_NAME": "${MODEL_NAME}",
-  "QUANTIZATION": "${QUANTIZATION}",
-  "MAX_MODEL_LENGTH": "${MAX_MODEL_LENGTH}",
-  "GPU_MEMORY_UTILIZATION": "${GPU_MEMORY_UTILIZATION}",
-  "DTYPE": "${DTYPE}"
-}
-ENVEOF
-)
+VLLM_API_KEY="${VLLM_API_KEY:-}"
 
 # ===== Preflight =====
 if ! command -v runpodctl &> /dev/null; then
@@ -35,14 +22,74 @@ if ! command -v runpodctl &> /dev/null; then
   exit 1
 fi
 
+RUNPOD_API_KEY=$(python3 -c "
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib
+with open('$HOME/.runpod/config.toml', 'rb') as f:
+    print(tomllib.load(f)['apikey'])
+" 2>/dev/null || true)
+
+if [ -z "${RUNPOD_API_KEY}" ]; then
+  echo "Error: RunPod API key not found in ~/.runpod/config.toml" >&2
+  exit 1
+fi
+
+if [ -z "${VLLM_API_KEY}" ]; then
+  VLLM_API_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+  echo "==> Generated API key: ${VLLM_API_KEY}"
+fi
+
+# ===== Query GPU availability and pricing =====
+echo "==> Querying GPU availability (VRAM >= ${MIN_VRAM}GB, price < \$${MAX_PRICE}/hr)..."
+GPU_CANDIDATES=$(curl -s "https://api.runpod.io/graphql?api_key=${RUNPOD_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"{ gpuTypes { id displayName memoryInGb securePrice communityPrice } }"}' \
+  | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+gpus = data['data']['gpuTypes']
+min_vram = ${MIN_VRAM}
+max_price = ${MAX_PRICE}
+candidates = []
+for g in gpus:
+    mem = g['memoryInGb']
+    if mem < min_vram:
+        continue
+    # Community first (cheaper), then Secure
+    cp = g.get('communityPrice')
+    sp = g.get('securePrice')
+    if cp and cp < max_price:
+        candidates.append((cp, 'COMMUNITY', g['id'], mem, g['displayName']))
+    if sp and sp < max_price:
+        candidates.append((sp, 'SECURE', g['id'], mem, g['displayName']))
+candidates.sort(key=lambda x: x[0])
+for price, cloud, gpu_id, mem, name in candidates:
+    print(f'{gpu_id}|{cloud}|{price}|{mem}|{name}')
+")
+
+if [ -z "${GPU_CANDIDATES}" ]; then
+  echo "Error: no GPU found matching criteria" >&2
+  exit 1
+fi
+
+echo "   Candidates (cheapest first):"
+echo "${GPU_CANDIDATES}" | while IFS='|' read -r gpu_id cloud price mem name; do
+  printf "   %-45s %4sGB  \$%s/hr  %s\n" "${gpu_id}" "${mem}" "${price}" "${cloud}"
+done
+
+# ===== Build vLLM command args =====
+VLLM_CMD="${MODEL_NAME},--max-model-len,${MAX_MODEL_LENGTH},--gpu-memory-utilization,${GPU_MEMORY_UTILIZATION},--dtype,${DTYPE},--api-key,${VLLM_API_KEY},--enable-auto-tool-choice,--tool-call-parser,hermes,--host,0.0.0.0,--port,8000"
+
+# ===== Create Template =====
 echo "==> Creating template: ${TEMPLATE_NAME}"
 TEMPLATE_RESULT=$(runpodctl template create \
   --name "${TEMPLATE_NAME}" \
   --image "${IMAGE}" \
-  --serverless \
   --container-disk-in-gb "${CONTAINER_DISK}" \
-  --volume-in-gb "${VOLUME_DISK}" \
-  --env "${ENV_JSON}" \
+  --ports "8000/http" \
+  --docker-start-cmd "${VLLM_CMD}" \
   2>&1)
 
 echo "${TEMPLATE_RESULT}"
@@ -54,20 +101,35 @@ if [ -z "${TEMPLATE_ID}" ]; then
 fi
 echo "==> Template created: ${TEMPLATE_ID}"
 
-echo "==> Creating endpoint: ${ENDPOINT_NAME}"
-ENDPOINT_RESULT=$(runpodctl serverless create \
-  --name "${ENDPOINT_NAME}" \
-  --template-id "${TEMPLATE_ID}" \
-  --gpu-id "${GPU_ID}" \
-  --workers-min "${WORKERS_MIN}" \
-  --workers-max "${WORKERS_MAX}" \
-  2>&1)
+# ===== Create Pod (try candidates in price order) =====
+POD_ID=""
+USED_GPU=""
+USED_CLOUD=""
+USED_PRICE=""
 
-echo "${ENDPOINT_RESULT}"
-ENDPOINT_ID=$(echo "${ENDPOINT_RESULT}" | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])" 2>/dev/null || true)
+while IFS='|' read -r gpu_id cloud price mem name; do
+  echo "==> Trying: ${name} (${mem}GB, \$${price}/hr, ${cloud})"
+  POD_RESULT=$(runpodctl pod create \
+    --template-id "${TEMPLATE_ID}" \
+    --gpu-id "${gpu_id}" \
+    --name "${POD_NAME}" \
+    --cloud-type "${cloud}" \
+    2>&1) || true
 
-if [ -z "${ENDPOINT_ID}" ]; then
-  echo "Error: failed to extract endpoint ID" >&2
+  POD_ID=$(echo "${POD_RESULT}" | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])" 2>/dev/null || true)
+
+  if [ -n "${POD_ID}" ]; then
+    USED_GPU="${name}"
+    USED_CLOUD="${cloud}"
+    USED_PRICE="${price}"
+    break
+  fi
+  echo "    Not available, trying next..."
+done <<< "${GPU_CANDIDATES}"
+
+if [ -z "${POD_ID}" ]; then
+  echo "Error: no GPU available. All candidates exhausted." >&2
+  echo "  Cleanup template: runpodctl template delete ${TEMPLATE_ID}" >&2
   exit 1
 fi
 
@@ -75,17 +137,25 @@ echo ""
 echo "=============================="
 echo "Deployment complete!"
 echo "=============================="
-echo "Endpoint ID : ${ENDPOINT_ID}"
-echo "Template ID : ${TEMPLATE_ID}"
-echo "GPU         : ${GPU_ID}"
-echo "Model       : ${MODEL_NAME}"
+echo "Pod ID  : ${POD_ID}"
+echo "GPU     : ${USED_GPU} (${USED_CLOUD}, \$${USED_PRICE}/hr)"
+echo "Model   : ${MODEL_NAME}"
+echo "API Key : ${VLLM_API_KEY}"
 echo ""
-echo "OpenAI-compatible API:"
-echo "  https://api.runpod.ai/v2/${ENDPOINT_ID}/openai/v1"
+echo "OpenAI-compatible API (after model download completes):"
+echo "  https://${POD_ID}-8000.proxy.runpod.net/v1"
 echo ""
 echo "Goose config:"
 echo "  provider:"
 echo "    type: openai"
-echo "    api_key: <RunPod API Key>"
-echo "    base_url: https://api.runpod.ai/v2/${ENDPOINT_ID}/openai/v1"
+echo "    api_key: ${VLLM_API_KEY}"
+echo "    base_url: https://${POD_ID}-8000.proxy.runpod.net/v1"
 echo "    model: ${MODEL_NAME}"
+echo ""
+echo "Goose launch:"
+echo "  OPENAI_API_KEY=${VLLM_API_KEY} goose session"
+echo ""
+echo "Lifecycle:"
+echo "  runpodctl pod stop ${POD_ID}    # pause (stop billing)"
+echo "  runpodctl pod start ${POD_ID}   # resume"
+echo "  runpodctl pod delete ${POD_ID}  # destroy permanently"

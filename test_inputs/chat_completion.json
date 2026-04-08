@@ -1,13 +1,8 @@
 {
-  "input": {
-    "openai_route": "/v1/chat/completions",
-    "openai_input": {
-      "model": "cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit",
-      "messages": [
-        { "role": "user", "content": "Hello, who are you?" }
-      ],
-      "max_tokens": 100,
-      "stream": false
-    }
-  }
+  "model": "cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit",
+  "messages": [
+    { "role": "user", "content": "Hello, who are you?" }
+  ],
+  "max_tokens": 100,
+  "stream": false
 }

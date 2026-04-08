@@ -7,7 +7,7 @@ Docker で Gemma4 モデルを動かすためのリポジトリ。
 | 環境 | フレームワーク | モデル | GPU |
 |---|---|---|---|
 | ローカル | Ollama | gemma4:e4b (GGUF) | RTX 3060 (12GB) |
-| RunPod Serverless | vLLM (公式イメージ) | gemma-4-26B-A4B AWQ 4bit | 24GB+ |
+| RunPod Pod | vLLM (公式イメージ) | gemma-4-26B-A4B AWQ 4bit | A5000 (24GB) |
 
 ## ローカル (Ollama + E4B)
 
@@ -17,32 +17,43 @@ docker exec ollama ollama pull gemma4:e4b
 curl http://localhost:11434/api/generate -d '{"model":"gemma4:e4b","prompt":"Hello"}'
 ```
 
-## RunPod Serverless (vLLM + 26B AWQ)
+## RunPod Pod (vLLM + 26B AWQ)
 
-公式 `runpod/worker-vllm` イメージを使用。モデルは初回起動時にダウンロードされる。
+公式 `vllm/vllm-openai:gemma4` イメージを使用。`--api-key` で認証を設定。
 
 ### デプロイ
 
 ```bash
-scripts/deploy-runpod.sh
+VLLM_API_KEY=your-secret-key ./scripts/deploy-runpod.sh
 ```
 
-`runpodctl` でテンプレートとエンドポイントを一括作成する。
+`runpodctl` でテンプレートと Pod を一括作成。完了時に接続情報が出力される。
 
 | 変数 | デフォルト |
 |---|---|
-| `IMAGE` | `runpod/worker-vllm:stable-cuda12.1.0` |
-| `GPU_ID` | `NVIDIA RTX A5000` |
-| `WORKERS_MIN` / `WORKERS_MAX` | `0` / `1` |
-| `CONTAINER_DISK` | `40` |
+| `IMAGE` | `vllm/vllm-openai:gemma4` |
+| `GPU_IDS` | `NVIDIA RTX A5000,NVIDIA RTX A6000,NVIDIA A40` |
+| `CLOUD_TYPE` | `COMMUNITY` |
+| `CONTAINER_DISK` | `50` |
 | `MODEL_NAME` | `cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit` |
+| `VLLM_API_KEY` | (必須) |
 
 ### Goose 接続
 
 ```yaml
 provider:
   type: openai
-  api_key: "<RunPod API Key>"
-  base_url: "https://api.runpod.ai/v2/<endpoint_id>/openai/v1"
+  api_key: "your-secret-key"
+  base_url: "https://<pod-id>-8000.proxy.runpod.net/v1"
   model: "cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit"
 ```
+
+### ライフサイクル管理
+
+```bash
+runpodctl pod stop <pod-id>    # 一時停止（課金停止）
+runpodctl pod start <pod-id>   # 再開
+runpodctl pod delete <pod-id>  # 完全削除
+```
+
+Pod は常時課金されるため、使わないときは `stop` で課金を止めてください。
