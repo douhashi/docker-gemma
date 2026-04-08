@@ -5,7 +5,7 @@ set -euo pipefail
 TEMPLATE_NAME="${TEMPLATE_NAME:-docker-gemma-vllm}"
 ENDPOINT_NAME="${ENDPOINT_NAME:-docker-gemma}"
 IMAGE="${IMAGE:-ghcr.io/douhashi/docker-gemma:latest}"
-GPU_ID="${GPU_ID:-NVIDIA GeForce RTX 4090}"
+GPU_ID="${GPU_ID:-NVIDIA RTX A5000}"
 WORKERS_MIN="${WORKERS_MIN:-0}"
 WORKERS_MAX="${WORKERS_MAX:-1}"
 CONTAINER_DISK="${CONTAINER_DISK:-40}"
