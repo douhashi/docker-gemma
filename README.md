@@ -1,4 +1,4 @@
-# docker-gemma
+# runpod-vllm-gemma
 
 Docker で Gemma4 モデルを動かすためのリポジトリ。
 

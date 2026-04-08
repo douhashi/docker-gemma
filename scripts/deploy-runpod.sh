@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # ===== Configuration =====
-POD_NAME="${POD_NAME:-docker-gemma}"
-TEMPLATE_NAME="${TEMPLATE_NAME:-docker-gemma-vllm}"
+POD_NAME="${POD_NAME:-runpod-vllm-gemma}"
+TEMPLATE_NAME="${TEMPLATE_NAME:-runpod-vllm-gemma}"
 IMAGE="${IMAGE:-vllm/vllm-openai:gemma4}"
 CONTAINER_DISK="${CONTAINER_DISK:-50}"
 MIN_VRAM="${MIN_VRAM:-24}"

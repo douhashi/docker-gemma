@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-PREFIX="${PREFIX:-docker-gemma}"
+PREFIX="${PREFIX:-runpod-vllm-gemma}"
 
 echo "==> Listing pods matching '${PREFIX}'..."
 PODS=$(runpodctl pod list 2>&1)
