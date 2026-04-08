@@ -40,7 +40,7 @@ curl http://localhost:11434/api/generate -d '{"model":"gemma4:e4b","prompt":"Hel
 ### デプロイ
 
 ```bash
-VLLM_API_KEY=your-secret-key ./scripts/deploy-runpod.sh
+./scripts/deploy-runpod.sh
 ```
 
 `runpodctl` でテンプレートと Pod を一括作成。完了時に接続情報が出力される。
@@ -48,11 +48,11 @@ VLLM_API_KEY=your-secret-key ./scripts/deploy-runpod.sh
 | 変数 | デフォルト |
 |---|---|
 | `IMAGE` | `vllm/vllm-openai:gemma4` |
-| `GPU_IDS` | `NVIDIA RTX A5000,NVIDIA RTX A6000,NVIDIA A40` |
-| `CLOUD_TYPE` | `COMMUNITY` |
+| `MIN_VRAM` | `24` |
+| `MAX_PRICE` | `0.80` |
 | `CONTAINER_DISK` | `50` |
 | `MODEL_NAME` | `cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit` |
-| `VLLM_API_KEY` | (必須) |
+| `VLLM_API_KEY` | 未設定時は自動生成 |
 
 ### Goose 接続
 
@@ -63,6 +63,14 @@ provider:
   base_url: "https://<pod-id>-8000.proxy.runpod.net/v1"
   model: "cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit"
 ```
+
+### クリーンアップ
+
+```bash
+./scripts/cleanup-runpod.sh
+```
+
+`runpod-vllm-gemma` に一致する Pod とテンプレートを一覧表示し、確認後に一括削除する。`PREFIX` 環境変数でマッチ対象を変更可能。
 
 ### ライフサイクル管理
 
