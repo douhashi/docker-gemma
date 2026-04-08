@@ -133,6 +133,37 @@ if [ -z "${POD_ID}" ]; then
   exit 1
 fi
 
+BASE_URL="https://${POD_ID}-8000.proxy.runpod.net"
+POLL_INTERVAL="${POLL_INTERVAL:-15}"
+POLL_TIMEOUT="${POLL_TIMEOUT:-900}"
+
+echo ""
+echo "==> Waiting for vLLM to become ready (timeout: ${POLL_TIMEOUT}s)..."
+echo "    Polling ${BASE_URL}/v1/models every ${POLL_INTERVAL}s"
+
+ELAPSED=0
+while [ "${ELAPSED}" -lt "${POLL_TIMEOUT}" ]; do
+  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 \
+    -H "Authorization: Bearer ${VLLM_API_KEY}" \
+    "${BASE_URL}/v1/models" 2>/dev/null || echo "000")
+
+  if [ "${HTTP_CODE}" = "200" ]; then
+    echo ""
+    echo "==> vLLM is ready! (${ELAPSED}s elapsed)"
+    break
+  fi
+
+  printf "\r    [%3ds] HTTP %s — waiting..." "${ELAPSED}" "${HTTP_CODE}"
+  sleep "${POLL_INTERVAL}"
+  ELAPSED=$((ELAPSED + POLL_INTERVAL))
+done
+
+if [ "${ELAPSED}" -ge "${POLL_TIMEOUT}" ]; then
+  echo ""
+  echo "Warning: timed out after ${POLL_TIMEOUT}s. The pod may still be loading." >&2
+  echo "  Check manually: curl -H 'Authorization: Bearer ${VLLM_API_KEY}' ${BASE_URL}/v1/models" >&2
+fi
+
 echo ""
 echo "=============================="
 echo "Deployment complete!"
@@ -141,15 +172,13 @@ echo "Pod ID  : ${POD_ID}"
 echo "GPU     : ${USED_GPU} (${USED_CLOUD}, \$${USED_PRICE}/hr)"
 echo "Model   : ${MODEL_NAME}"
 echo "API Key : ${VLLM_API_KEY}"
-echo ""
-echo "OpenAI-compatible API (after model download completes):"
-echo "  https://${POD_ID}-8000.proxy.runpod.net/v1"
+echo "API URL : ${BASE_URL}/v1"
 echo ""
 echo "Goose config:"
 echo "  provider:"
 echo "    type: openai"
 echo "    api_key: ${VLLM_API_KEY}"
-echo "    base_url: https://${POD_ID}-8000.proxy.runpod.net/v1"
+echo "    base_url: ${BASE_URL}/v1"
 echo "    model: ${MODEL_NAME}"
 echo ""
 echo "Goose launch:"
