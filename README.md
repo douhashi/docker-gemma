@@ -22,22 +22,50 @@ curl http://localhost:11434/api/generate -d '{"model":"gemma4:e4b","prompt":"Hel
 ### ビルド & プッシュ
 
 ```bash
-docker build -t ghcr.io/douhashi/docker-gemma:latest .
-docker push ghcr.io/douhashi/docker-gemma:latest
+scripts/build-and-push.sh
 ```
+
+環境変数で上書き可能:
+
+| 変数 | デフォルト |
+|---|---|
+| `REGISTRY` | `ghcr.io` |
+| `IMAGE_NAME` | `douhashi/docker-gemma` |
+| `TAG` | `latest` |
 
 または GitHub Actions の `workflow_dispatch` で手動実行。
 
 ### デプロイ
 
-RunPod Console → Serverless → New Endpoint で以下を設定:
+```bash
+scripts/deploy-runpod.sh
+```
 
-| 項目 | 値 |
+`runpodctl` が必要。テンプレートとエンドポイントを一括作成する。
+
+| 変数 | デフォルト |
 |---|---|
-| Image | `ghcr.io/douhashi/docker-gemma:latest` |
-| GPU | 24GB (A5000 / RTX 4090) |
-| Disk | 30GB |
-| Workers | min 0 / max 1 |
+| `TEMPLATE_NAME` | `docker-gemma-vllm` |
+| `ENDPOINT_NAME` | `docker-gemma` |
+| `IMAGE` | `ghcr.io/douhashi/docker-gemma:latest` |
+| `GPU_ID` | `NVIDIA RTX A5000` |
+| `WORKERS_MIN` / `WORKERS_MAX` | `0` / `1` |
+| `CONTAINER_DISK` | `40` |
+| `MODEL_NAME` | `cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit` |
+| `QUANTIZATION` | `awq` |
+| `MAX_MODEL_LENGTH` | `8192` |
+| `GPU_MEMORY_UTILIZATION` | `0.90` |
+| `DTYPE` | `float16` |
+
+### モデルダウンロード
+
+HuggingFace からモデルをローカルにダウンロードする:
+
+```bash
+scripts/download_model.sh [MODEL_ID] [LOCAL_DIR]
+```
+
+デフォルトは `cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit` → `./models/` 配下に保存。
 
 ### Goose 接続
 
