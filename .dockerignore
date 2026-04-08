@@ -1,8 +1,0 @@
-.git/
-.tmp/
-docs/
-*.md
-LICENSE
-docker-compose.yml
-test_inputs/
-.github/
