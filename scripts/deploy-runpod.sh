@@ -80,7 +80,7 @@ echo "${GPU_CANDIDATES}" | while IFS='|' read -r gpu_id cloud price mem name; do
 done
 
 # ===== Build vLLM command args =====
-VLLM_CMD="${MODEL_NAME},--max-model-len,${MAX_MODEL_LENGTH},--gpu-memory-utilization,${GPU_MEMORY_UTILIZATION},--dtype,${DTYPE},--api-key,${VLLM_API_KEY},--enable-auto-tool-choice,--tool-call-parser,hermes,--host,0.0.0.0,--port,8000"
+VLLM_CMD="${MODEL_NAME},--served-model-name,${MODEL_NAME},gpt-4o-mini,--max-model-len,${MAX_MODEL_LENGTH},--gpu-memory-utilization,${GPU_MEMORY_UTILIZATION},--dtype,${DTYPE},--api-key,${VLLM_API_KEY},--enable-auto-tool-choice,--tool-call-parser,hermes,--host,0.0.0.0,--port,8000"
 
 # ===== Create Template =====
 echo "==> Creating template: ${TEMPLATE_NAME}"
@@ -175,7 +175,7 @@ else
 GOOSE_PROVIDER: openai
 GOOSE_MODEL: ${MODEL_NAME}
 OPENAI_HOST: ${BASE_URL}
-GOOSE_MODE: auto
+goose_mode: auto
 GOOSE_TELEMETRY_ENABLED: true
 extensions:
   developer:
