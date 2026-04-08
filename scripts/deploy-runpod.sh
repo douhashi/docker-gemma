@@ -164,6 +164,13 @@ if [ "${ELAPSED}" -ge "${POLL_TIMEOUT}" ]; then
   echo "  Check manually: curl -H 'Authorization: Bearer ${VLLM_API_KEY}' ${BASE_URL}/v1/models" >&2
 fi
 
+# ===== Update Goose config =====
+GOOSE_CONFIG="${HOME}/.config/goose/config.yaml"
+if [ -f "${GOOSE_CONFIG}" ]; then
+  sed -i "s|OPENAI_HOST:.*|OPENAI_HOST: ${BASE_URL}|" "${GOOSE_CONFIG}"
+  echo "==> Updated ${GOOSE_CONFIG} (OPENAI_HOST: ${BASE_URL})"
+fi
+
 echo ""
 echo "=============================="
 echo "Deployment complete!"

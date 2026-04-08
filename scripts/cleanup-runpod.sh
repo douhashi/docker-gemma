@@ -3,6 +3,22 @@ set -euo pipefail
 
 PREFIX="${PREFIX:-runpod-vllm-gemma}"
 
+# ===== Resolve RunPod API key =====
+RUNPOD_API_KEY=$(python3 -c "
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib
+with open('$HOME/.runpod/config.toml', 'rb') as f:
+    print(tomllib.load(f)['apikey'])
+" 2>/dev/null || true)
+
+if [ -z "${RUNPOD_API_KEY}" ]; then
+  echo "Error: RunPod API key not found in ~/.runpod/config.toml" >&2
+  exit 1
+fi
+
+# ===== List matching pods =====
 echo "==> Listing pods matching '${PREFIX}'..."
 PODS=$(runpodctl pod list 2>&1)
 MATCHED_PODS=$(echo "${PODS}" | python3 -c "
@@ -18,12 +34,17 @@ else:
 
 echo "${MATCHED_PODS}"
 
+# ===== List matching templates (via GraphQL — runpodctl only returns public ones) =====
 echo ""
 echo "==> Listing templates matching '${PREFIX}'..."
-TEMPLATES=$(runpodctl template list 2>&1)
+TEMPLATES=$(curl -s "https://api.runpod.io/graphql?api_key=${RUNPOD_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"{ myself { podTemplates { id name imageName } } }"}')
+
 MATCHED_TEMPLATES=$(echo "${TEMPLATES}" | python3 -c "
 import json, sys
-templates = json.load(sys.stdin)
+data = json.load(sys.stdin)
+templates = data['data']['myself']['podTemplates']
 matched = [t for t in templates if '${PREFIX}' in t.get('name','').lower()]
 if not matched:
     print('NONE')
@@ -47,6 +68,7 @@ if [[ "${CONFIRM}" != "y" && "${CONFIRM}" != "Y" ]]; then
   exit 0
 fi
 
+# ===== Delete matching pods =====
 echo ""
 echo "${PODS}" | python3 -c "
 import json, sys
@@ -59,15 +81,24 @@ for p in pods:
   runpodctl pod delete "${pod_id}" 2>&1 | python3 -c "import json,sys; d=json.load(sys.stdin); print(f\"   deleted: {d.get('deleted',False)}\")" 2>/dev/null || true
 done
 
+# ===== Delete matching templates (via GraphQL mutation — templateName takes the name, not ID) =====
 echo "${TEMPLATES}" | python3 -c "
 import json, sys
-templates = json.load(sys.stdin)
+data = json.load(sys.stdin)
+templates = data['data']['myself']['podTemplates']
 for t in templates:
     if '${PREFIX}' in t.get('name','').lower():
-        print(t['id'])
-" 2>/dev/null | while read -r tpl_id; do
-  echo "==> Deleting template: ${tpl_id}"
-  runpodctl template delete "${tpl_id}" 2>&1 | python3 -c "import json,sys; d=json.load(sys.stdin); print(f\"   deleted: {d.get('deleted',False)}\")" 2>/dev/null || true
+        print(t['name'])
+" 2>/dev/null | while read -r tpl_name; do
+  echo "==> Deleting template: ${tpl_name}"
+  RESULT=$(curl -s "https://api.runpod.io/graphql?api_key=${RUNPOD_API_KEY}" \
+    -H "Content-Type: application/json" \
+    -d "{\"query\":\"mutation { deleteTemplate(templateName: \\\"${tpl_name}\\\") }\"}")
+  if echo "${RESULT}" | python3 -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if 'errors' not in d else 1)" 2>/dev/null; then
+    echo "   deleted"
+  else
+    echo "   failed: ${RESULT}" >&2
+  fi
 done
 
 echo ""
