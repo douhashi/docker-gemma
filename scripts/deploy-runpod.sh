@@ -6,7 +6,7 @@ POD_NAME="${POD_NAME:-runpod-vllm-gemma}"
 TEMPLATE_NAME="${TEMPLATE_NAME:-runpod-vllm-gemma}"
 IMAGE="${IMAGE:-vllm/vllm-openai:gemma4}"
 CONTAINER_DISK="${CONTAINER_DISK:-50}"
-MIN_VRAM="${MIN_VRAM:-24}"
+MIN_VRAM="${MIN_VRAM:-48}"
 MAX_PRICE="${MAX_PRICE:-0.80}"
 
 # vLLM settings
@@ -80,7 +80,7 @@ echo "${GPU_CANDIDATES}" | while IFS='|' read -r gpu_id cloud price mem name; do
 done
 
 # ===== Build vLLM command args =====
-VLLM_CMD="${MODEL_NAME},--served-model-name,${MODEL_NAME},gpt-4o-mini,--max-model-len,${MAX_MODEL_LENGTH},--gpu-memory-utilization,${GPU_MEMORY_UTILIZATION},--dtype,${DTYPE},--api-key,${VLLM_API_KEY},--enable-auto-tool-choice,--tool-call-parser,hermes,--host,0.0.0.0,--port,8000"
+VLLM_CMD="${MODEL_NAME},--served-model-name,${MODEL_NAME},gpt-4o-mini,--max-model-len,${MAX_MODEL_LENGTH},--gpu-memory-utilization,${GPU_MEMORY_UTILIZATION},--dtype,${DTYPE},--api-key,${VLLM_API_KEY},--enable-auto-tool-choice,--tool-call-parser,gemma4,--reasoning-parser,gemma4,--host,0.0.0.0,--port,8000"
 
 # ===== Create Template =====
 echo "==> Creating template: ${TEMPLATE_NAME}"
@@ -175,7 +175,7 @@ else
 GOOSE_PROVIDER: openai
 GOOSE_MODEL: ${MODEL_NAME}
 OPENAI_HOST: ${BASE_URL}
-goose_mode: auto
+GOOSE_MODE: auto
 GOOSE_TELEMETRY_ENABLED: true
 extensions:
   developer:
@@ -208,7 +208,7 @@ echo "    base_url: ${BASE_URL}/v1"
 echo "    model: ${MODEL_NAME}"
 echo ""
 echo "Goose launch:"
-echo "  OPENAI_API_KEY=${VLLM_API_KEY} goose session"
+echo "  OPENAI_HOST=${BASE_URL} OPENAI_API_KEY=${VLLM_API_KEY} goose session"
 echo ""
 echo "Lifecycle:"
 echo "  runpodctl pod stop ${POD_ID}    # pause (stop billing)"
