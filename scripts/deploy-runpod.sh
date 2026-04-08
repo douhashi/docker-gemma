@@ -80,7 +80,10 @@ echo "${GPU_CANDIDATES}" | while IFS='|' read -r gpu_id cloud price mem name; do
 done
 
 # ===== Build vLLM command args =====
-VLLM_CMD="${MODEL_NAME},--served-model-name,${MODEL_NAME},gpt-4o-mini,--max-model-len,${MAX_MODEL_LENGTH},--gpu-memory-utilization,${GPU_MEMORY_UTILIZATION},--dtype,${DTYPE},--api-key,${VLLM_API_KEY},--enable-auto-tool-choice,--tool-call-parser,gemma4,--reasoning-parser,gemma4,--host,0.0.0.0,--port,8000"
+# TODO: thinking 有効化は vllm-project/vllm#39081 マージ後に再検討
+#   現状 Gemma4ReasoningParser が <|channel> トークンをパースできず content に漏れる (vllm-project/vllm#38855)
+#   Goose 側も reasoning_content 未対応 (block/goose#6192)
+VLLM_CMD="${MODEL_NAME},--served-model-name,${MODEL_NAME},gpt-4o-mini,--max-model-len,${MAX_MODEL_LENGTH},--gpu-memory-utilization,${GPU_MEMORY_UTILIZATION},--dtype,${DTYPE},--api-key,${VLLM_API_KEY},--enable-auto-tool-choice,--tool-call-parser,gemma4,--reasoning-parser,gemma4,--chat-template-kwargs,enable_thinking=false,--host,0.0.0.0,--port,8000"
 
 # ===== Create Template =====
 echo "==> Creating template: ${TEMPLATE_NAME}"
