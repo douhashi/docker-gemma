@@ -53,10 +53,16 @@ data = json.load(sys.stdin)
 gpus = data['data']['gpuTypes']
 min_vram = ${MIN_VRAM}
 max_price = ${MAX_PRICE}
+# FP8 requires Ada Lovelace (sm89) or Hopper (sm90) architecture
+fp8_keywords = ['4090', '4080', 'L4', 'L40', 'L40S', 'H100', 'H200', 'A100', 'RTX 5', 'RTX PRO', 'Blackwell', 'MI300']
+def is_fp8_capable(name):
+    return any(kw in name for kw in fp8_keywords)
 candidates = []
 for g in gpus:
     mem = g['memoryInGb']
     if mem < min_vram:
+        continue
+    if not is_fp8_capable(g['displayName']):
         continue
     # Community first (cheaper), then Secure
     cp = g.get('communityPrice')
