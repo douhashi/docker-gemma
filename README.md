@@ -42,7 +42,7 @@ Docker で Gemma4 モデルを動かすためのリポジトリ。
 | `IMAGE` | `vllm/vllm-openai:gemma4` |
 | `MIN_VRAM` | `48` |
 | `MAX_PRICE` | `0.80` |
-| `CONTAINER_DISK` | `50` |
+| `CONTAINER_DISK` | `100` |
 | `MODEL_NAME` | `google/gemma-4-31B-it` |
 | `VLLM_API_KEY` | 未設定時は自動生成 |
 | `POLL_INTERVAL` | `15` (秒) |

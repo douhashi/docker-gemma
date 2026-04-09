@@ -5,7 +5,7 @@ set -euo pipefail
 POD_NAME="${POD_NAME:-runpod-vllm-gemma}"
 TEMPLATE_NAME="${TEMPLATE_NAME:-runpod-vllm-gemma}"
 IMAGE="${IMAGE:-vllm/vllm-openai:gemma4}"
-CONTAINER_DISK="${CONTAINER_DISK:-50}"
+CONTAINER_DISK="${CONTAINER_DISK:-100}"
 MIN_VRAM="${MIN_VRAM:-48}"
 MAX_PRICE="${MAX_PRICE:-0.80}"
 
@@ -127,6 +127,7 @@ while IFS='|' read -r gpu_id cloud price mem name; do
     --gpu-id "${gpu_id}" \
     --name "${POD_NAME}" \
     --cloud-type "${cloud}" \
+    --container-disk-in-gb "${CONTAINER_DISK}" \
     2>&1) || true
 
   POD_ID=$(echo "${POD_RESULT}" | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])" 2>/dev/null || true)
