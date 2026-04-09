@@ -40,7 +40,7 @@ Docker で Gemma4 モデルを動かすためのリポジトリ。
 | 変数 | デフォルト |
 |---|---|
 | `IMAGE` | `vllm/vllm-openai:gemma4` |
-| `MIN_VRAM` | `24` |
+| `MIN_VRAM` | `48` |
 | `MAX_PRICE` | `0.80` |
 | `CONTAINER_DISK` | `50` |
 | `MODEL_NAME` | `cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit` |
