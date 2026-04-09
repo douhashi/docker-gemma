@@ -1,7 +1,23 @@
 #!/bin/bash
 set -euo pipefail
 
-PREFIX="${PREFIX:-runpod-vllm-gemma}"
+# --all: delete all matching resources, not just the current user's
+ALL=false
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    --all) ALL=true; shift ;;
+    *) echo "Unknown parameter: $1"; exit 1 ;;
+  esac
+done
+
+if [ "$ALL" = true ]; then
+  PREFIX="${PREFIX:-runpod-vllm-gemma}"
+  echo "Mode: all resources matching '${PREFIX}'"
+else
+  DEPLOY_USER="${DEPLOY_USER:-$(whoami)}"
+  PREFIX="${PREFIX:-runpod-vllm-gemma-${DEPLOY_USER}}"
+  echo "Mode: current user only (${DEPLOY_USER}). Use --all for all users."
+fi
 
 # ===== Resolve RunPod API key =====
 RUNPOD_API_KEY=$(python3 -c "

@@ -2,8 +2,9 @@
 set -euo pipefail
 
 # ===== Configuration =====
-POD_NAME="${POD_NAME:-runpod-vllm-gemma}"
-TEMPLATE_NAME="${TEMPLATE_NAME:-runpod-vllm-gemma}"
+DEPLOY_USER="${DEPLOY_USER:-$(whoami)}"
+POD_NAME="${POD_NAME:-runpod-vllm-gemma-${DEPLOY_USER}}"
+TEMPLATE_NAME="${TEMPLATE_NAME:-runpod-vllm-gemma-${DEPLOY_USER}}"
 IMAGE="${IMAGE:-vllm/vllm-openai:gemma4}"
 CONTAINER_DISK="${CONTAINER_DISK:-100}"
 MIN_VRAM="${MIN_VRAM:-48}"
