@@ -86,7 +86,7 @@ done
 #     --default-chat-template-kwargs '{"enable_thinking": true}'
 #     --chat-template examples/tool_chat_template_gemma4.jinja
 #   関連: vllm-project/vllm#38855, block/goose#6192
-VLLM_CMD="${MODEL_NAME},--served-model-name,${MODEL_NAME},gpt-4o-mini,--max-model-len,${MAX_MODEL_LENGTH},--gpu-memory-utilization,${GPU_MEMORY_UTILIZATION},--dtype,${DTYPE},--api-key,${VLLM_API_KEY},--enable-auto-tool-choice,--tool-call-parser,gemma4,--reasoning-parser,gemma4,--chat-template-kwargs,enable_thinking=false,--host,0.0.0.0,--port,8000"
+VLLM_CMD="${MODEL_NAME},--served-model-name,${MODEL_NAME},gpt-4o-mini,--max-model-len,${MAX_MODEL_LENGTH},--gpu-memory-utilization,${GPU_MEMORY_UTILIZATION},--dtype,${DTYPE},--api-key,${VLLM_API_KEY},--enable-auto-tool-choice,--tool-call-parser,gemma4,--reasoning-parser,gemma4,--host,0.0.0.0,--port,8000"
 
 # ===== Create Template =====
 echo "==> Creating template: ${TEMPLATE_NAME}"
