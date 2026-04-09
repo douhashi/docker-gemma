@@ -23,7 +23,7 @@ Docker で Gemma4 モデルを動かすためのリポジトリ。
 | 環境 | フレームワーク | モデル | GPU |
 |---|---|---|---|
 | ローカル | Ollama | gemma4:e4b (GGUF) | RTX 3060 (12GB) |
-| RunPod Pod | vLLM (公式イメージ) | gemma-4-31B-it (FP8) | 48GB+ (A6000, A40 等) |
+| RunPod Pod | vLLM (公式イメージ) | gemma-4-26B-A4B-it MoE (FP8) | 48GB+ (L40, L40S 等) |
 
 ## Getting Started (RunPod + vLLM)
 
@@ -43,7 +43,7 @@ Docker で Gemma4 モデルを動かすためのリポジトリ。
 | `MIN_VRAM` | `48` |
 | `MAX_PRICE` | `0.80` |
 | `CONTAINER_DISK` | `100` |
-| `MODEL_NAME` | `google/gemma-4-31B-it` |
+| `MODEL_NAME` | `google/gemma-4-26B-A4B-it` |
 | `VLLM_API_KEY` | 未設定時は自動生成 |
 | `POLL_INTERVAL` | `15` (秒) |
 | `POLL_TIMEOUT` | `900` (秒) |
@@ -55,7 +55,7 @@ provider:
   type: openai
   api_key: "your-secret-key"
   base_url: "https://<pod-id>-8000.proxy.runpod.net/v1"
-  model: "google/gemma-4-31B-it"
+  model: "google/gemma-4-26B-A4B-it"
 ```
 
 ### Claude Code 接続
@@ -63,9 +63,9 @@ provider:
 ```bash
 CLAUDE_CODE_USE_VERTEX=0 \
 ANTHROPIC_BASE_URL="https://<pod-id>-8000.proxy.runpod.net" \
-ANTHROPIC_DEFAULT_OPUS_MODEL="google/gemma-4-31B-it" \
-ANTHROPIC_DEFAULT_SONNET_MODEL="google/gemma-4-31B-it" \
-ANTHROPIC_DEFAULT_HAIKU_MODEL="google/gemma-4-31B-it" \
+ANTHROPIC_DEFAULT_OPUS_MODEL="google/gemma-4-26B-A4B-it" \
+ANTHROPIC_DEFAULT_SONNET_MODEL="google/gemma-4-26B-A4B-it" \
+ANTHROPIC_DEFAULT_HAIKU_MODEL="google/gemma-4-26B-A4B-it" \
 ANTHROPIC_AUTH_TOKEN="your-secret-key" \
 claude --model sonnet
 ```
