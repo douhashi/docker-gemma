@@ -80,9 +80,12 @@ echo "${GPU_CANDIDATES}" | while IFS='|' read -r gpu_id cloud price mem name; do
 done
 
 # ===== Build vLLM command args =====
-# TODO: thinking 有効化は vllm-project/vllm#39081 マージ後に再検討
-#   現状 Gemma4ReasoningParser が <|channel> トークンをパースできず content に漏れる (vllm-project/vllm#38855)
-#   Goose 側も reasoning_content 未対応 (block/goose#6192)
+# TODO: thinking 有効化は vllm/vllm-openai:gemma4 イメージ更新後に再検討
+#   vllm-project/vllm#39027 (マージ済み) で Gemma4 reasoning/tool calling が修正された
+#   新イメージでは以下に切り替える:
+#     --default-chat-template-kwargs '{"enable_thinking": true}'
+#     --chat-template examples/tool_chat_template_gemma4.jinja
+#   関連: vllm-project/vllm#38855, block/goose#6192
 VLLM_CMD="${MODEL_NAME},--served-model-name,${MODEL_NAME},gpt-4o-mini,--max-model-len,${MAX_MODEL_LENGTH},--gpu-memory-utilization,${GPU_MEMORY_UTILIZATION},--dtype,${DTYPE},--api-key,${VLLM_API_KEY},--enable-auto-tool-choice,--tool-call-parser,gemma4,--reasoning-parser,gemma4,--chat-template-kwargs,enable_thinking=false,--host,0.0.0.0,--port,8000"
 
 # ===== Create Template =====
@@ -212,6 +215,15 @@ echo "    model: ${MODEL_NAME}"
 echo ""
 echo "Goose launch:"
 echo "  OPENAI_HOST=${BASE_URL} OPENAI_API_KEY=${VLLM_API_KEY} goose session"
+echo ""
+echo "Claude Code launch:"
+echo "  CLAUDE_CODE_USE_VERTEX=0 \\"
+echo "  ANTHROPIC_BASE_URL=${BASE_URL} \\"
+echo "  ANTHROPIC_DEFAULT_OPUS_MODEL=${MODEL_NAME} \\"
+echo "  ANTHROPIC_DEFAULT_SONNET_MODEL=${MODEL_NAME} \\"
+echo "  ANTHROPIC_DEFAULT_HAIKU_MODEL=${MODEL_NAME} \\"
+echo "  ANTHROPIC_AUTH_TOKEN=${VLLM_API_KEY} \\"
+echo "  claude --model sonnet"
 echo ""
 echo "Lifecycle:"
 echo "  runpodctl pod stop ${POD_ID}    # pause (stop billing)"

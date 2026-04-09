@@ -58,6 +58,20 @@ provider:
   model: "cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit"
 ```
 
+### Claude Code 接続
+
+```bash
+CLAUDE_CODE_USE_VERTEX=0 \
+ANTHROPIC_BASE_URL="https://<pod-id>-8000.proxy.runpod.net" \
+ANTHROPIC_DEFAULT_OPUS_MODEL="cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit" \
+ANTHROPIC_DEFAULT_SONNET_MODEL="cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit" \
+ANTHROPIC_DEFAULT_HAIKU_MODEL="cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit" \
+ANTHROPIC_AUTH_TOKEN="your-secret-key" \
+claude --model sonnet
+```
+
+> **Note**: vLLM の Anthropic API 互換と Gemma 4 tool calling 修正 (vllm-project/vllm#39027) を含むイメージが必要。
+
 ### クリーンアップ
 
 ```bash
