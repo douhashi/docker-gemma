@@ -149,7 +149,7 @@ fi
 
 BASE_URL="https://${POD_ID}-8000.proxy.runpod.net"
 POLL_INTERVAL="${POLL_INTERVAL:-15}"
-POLL_TIMEOUT="${POLL_TIMEOUT:-900}"
+POLL_TIMEOUT="${POLL_TIMEOUT:-1500}"
 
 echo ""
 echo "==> Waiting for vLLM to become ready (timeout: ${POLL_TIMEOUT}s)..."
