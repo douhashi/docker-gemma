@@ -54,9 +54,12 @@ data = json.load(sys.stdin)
 gpus = data['data']['gpuTypes']
 min_vram = ${MIN_VRAM}
 max_price = ${MAX_PRICE}
-# FP8 requires Ada Lovelace (sm89) or Hopper (sm90) architecture
-fp8_keywords = ['4090', '4080', 'L4', 'L40', 'L40S', 'H100', 'H200', 'A100', 'RTX 5', 'RTX PRO', 'Blackwell', 'MI300']
+# FP8 requires Ada Lovelace (sm89) or Hopper (sm90) — NVIDIA only
+fp8_keywords = ['4090', '4080', 'L4', 'L40', 'L40S', 'H100', 'H200', 'A100', 'RTX 5', 'RTX PRO', 'Blackwell']
+amd_keywords = ['AMD', 'MI300', 'MI250', 'Instinct']
 def is_fp8_capable(name):
+    if any(kw in name for kw in amd_keywords):
+        return False
     return any(kw in name for kw in fp8_keywords)
 candidates = []
 for g in gpus:
@@ -144,7 +147,8 @@ done <<< "${GPU_CANDIDATES}"
 
 if [ -z "${POD_ID}" ]; then
   echo "Error: no GPU available. All candidates exhausted." >&2
-  echo "  Cleanup template: runpodctl template delete ${TEMPLATE_ID}" >&2
+  echo "==> Cleaning up template: ${TEMPLATE_ID}"
+  runpodctl template delete "${TEMPLATE_ID}" 2>&1 || true
   exit 1
 fi
 
