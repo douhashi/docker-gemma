@@ -10,10 +10,10 @@ MIN_VRAM="${MIN_VRAM:-48}"
 MAX_PRICE="${MAX_PRICE:-0.80}"
 
 # vLLM settings
-MODEL_NAME="${MODEL_NAME:-cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit}"
+MODEL_NAME="${MODEL_NAME:-google/gemma-4-31B-it}"
 MAX_MODEL_LENGTH="${MAX_MODEL_LENGTH:-auto}"
 GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.90}"
-DTYPE="${DTYPE:-float16}"
+DTYPE="${DTYPE:-fp8}"
 VLLM_API_KEY="${VLLM_API_KEY:-}"
 
 # ===== Preflight =====
